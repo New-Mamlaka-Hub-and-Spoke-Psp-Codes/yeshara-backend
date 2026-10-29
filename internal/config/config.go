@@ -58,6 +58,12 @@ type Config struct {
 	// live FX feed. Not used for settlement: the STK charge amount is always
 	// exactly what the investor sees on the KES input.
 	USDKESRate float64
+
+	// AppEnv is "production" in production (APP_ENV). Outside production a
+	// password-reset link is logged when no SMTP server is configured.
+	AppEnv string
+	// AppPublicURL is the frontend that password-reset emails link to.
+	AppPublicURL string
 }
 
 func getEnv(key, def string) string {
@@ -86,6 +92,8 @@ func Load() (*Config, error) {
 		PaymentsCallbackURL:    os.Getenv("PAYMENTS_CALLBACK_URL"),
 		PaymentsCallbackSecret: os.Getenv("PAYMENTS_CALLBACK_SECRET"),
 		USDKESRate:             129.0,
+		AppEnv:                 strings.ToLower(getEnv("APP_ENV", "development")),
+		AppPublicURL:           strings.TrimRight(getEnv("APP_PUBLIC_URL", "https://yeshara-marketplace.vercel.app"), "/"),
 	}
 	if cfg.CometAPIKey == "" || cfg.CometAPISecret == "" {
 		return nil, fmt.Errorf("COMET_API_KEY and COMET_API_SECRET are required (create a comet-engine tenant for Yeshara first)")

@@ -21,6 +21,7 @@ import (
 	"yeshara.network/marketplace/internal/investors"
 	"yeshara.network/marketplace/internal/offerings"
 	"yeshara.network/marketplace/internal/owners"
+	"yeshara.network/marketplace/internal/passwordreset"
 	"yeshara.network/marketplace/internal/redemptions"
 	"yeshara.network/marketplace/internal/staff"
 )
@@ -55,6 +56,9 @@ func main() {
 	}
 	if err := owners.EnsureIndexes(ctx); err != nil {
 		log.Fatalf("owner indexes: %v", err)
+	}
+	if err := passwordreset.EnsureIndexes(ctx); err != nil {
+		log.Fatalf("password reset indexes: %v", err)
 	}
 	if err := staff.EnsureIndexes(ctx); err != nil {
 		log.Fatalf("staff indexes: %v", err)

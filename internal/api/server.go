@@ -12,17 +12,20 @@ import (
 
 	"yeshara.network/marketplace/internal/cometengine"
 	"yeshara.network/marketplace/internal/config"
+	"yeshara.network/marketplace/internal/mailer"
 )
 
 type Server struct {
-	cfg *config.Config
-	ce  *cometengine.Client
+	cfg  *config.Config
+	ce   *cometengine.Client
+	mail *mailer.Mailer
 }
 
 func NewServer(cfg *config.Config) *Server {
 	return &Server{
-		cfg: cfg,
-		ce:  cometengine.New(cfg.CometEngineBaseURL, cfg.CometAPIKey, cfg.CometAPISecret, cfg.CometEngineNetwork),
+		cfg:  cfg,
+		mail: mailer.FromEnv(),
+		ce:   cometengine.New(cfg.CometEngineBaseURL, cfg.CometAPIKey, cfg.CometAPISecret, cfg.CometEngineNetwork),
 	}
 }
 
@@ -38,6 +41,11 @@ func (s *Server) Router() *gin.Engine {
 		v1.POST("/auth/login", loginRateLimit(), s.login)
 
 		v1.POST("/admin/login", loginRateLimit(), s.adminLogin)
+
+		// Self-service password reset for investors, owners and staff (the
+		// admin's password lives in ADMIN_PASSWORD_HASH and is changed there).
+		v1.POST("/auth/password/forgot", loginRateLimit(), s.forgotPassword)
+		v1.POST("/auth/password/reset", loginRateLimit(), s.resetPassword)
 
 		v1.GET("/offerings", s.listLiveOfferings)
 		v1.GET("/offerings/:offeringId", s.getOffering)

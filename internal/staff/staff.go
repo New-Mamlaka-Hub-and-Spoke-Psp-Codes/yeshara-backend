@@ -220,3 +220,21 @@ func Logout(ctx context.Context, token string) error {
 	_, err := sessionsCollection().DeleteOne(ctx, bson.M{"_id": token})
 	return err
 }
+
+// SetPassword replaces the account's password and signs it out everywhere,
+// so a reset also evicts whoever may have been using the old one.
+func SetPassword(ctx context.Context, id primitive.ObjectID, password string) error {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	res, err := collection().UpdateOne(ctx, bson.M{"_id": id}, bson.M{"$set": bson.M{"password_hash": string(hash)}})
+	if err != nil {
+		return err
+	}
+	if res.MatchedCount == 0 {
+		return mongo.ErrNoDocuments
+	}
+	_, err = sessionsCollection().DeleteMany(ctx, bson.M{"staff_id": id})
+	return err
+}
