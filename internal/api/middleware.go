@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"yeshara.network/marketplace/internal/admins"
 	"yeshara.network/marketplace/internal/investors"
 	"yeshara.network/marketplace/internal/owners"
 	"yeshara.network/marketplace/internal/staff"
@@ -109,11 +110,15 @@ func currentStaff(c *gin.Context) *staff.Staff {
 // marketplace; a multi-issuer Yeshara would need real admin accounts.
 func (s *Server) requireAdmin(c *gin.Context) {
 	token := c.GetHeader("X-Admin-Token")
-	if token == "" || subtle.ConstantTimeCompare([]byte(token), []byte(s.cfg.AdminToken)) != 1 {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "admin token required"})
+	if token != "" && subtle.ConstantTimeCompare([]byte(token), []byte(s.cfg.AdminToken)) == 1 {
+		c.Next() // static operator/script credential
 		return
 	}
-	c.Next()
+	if ok, err := admins.ValidSession(c.Request.Context(), token); err == nil && ok {
+		c.Next()
+		return
+	}
+	c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "admin token required"})
 }
 
 // ── Rate limiting ────────────────────────────────────────────────────────

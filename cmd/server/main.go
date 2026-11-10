@@ -14,6 +14,7 @@ import (
 
 	"github.com/joho/godotenv"
 
+	"yeshara.network/marketplace/internal/admins"
 	"yeshara.network/marketplace/internal/api"
 	"yeshara.network/marketplace/internal/config"
 	"yeshara.network/marketplace/internal/database"
@@ -59,6 +60,9 @@ func main() {
 	}
 	if err := passwordreset.EnsureIndexes(ctx); err != nil {
 		log.Fatalf("password reset indexes: %v", err)
+	}
+	if err := admins.EnsureIndexes(ctx); err != nil {
+		log.Fatalf("admin indexes: %v", err)
 	}
 	if err := staff.EnsureIndexes(ctx); err != nil {
 		log.Fatalf("staff indexes: %v", err)

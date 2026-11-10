@@ -1,5 +1,5 @@
 // Package passwordreset issues and redeems single-use password-reset tokens
-// for investor, owner and staff accounts. Only a SHA-256 of each token is
+// for investor, owner, staff and admin accounts. Only a SHA-256 of each token is
 // stored, a token lives for TokenTTL, and redeeming it is atomic, so a
 // leaked database row can't be replayed and a link works exactly once.
 package passwordreset
@@ -29,13 +29,14 @@ const (
 	Investor AccountType = "investor"
 	Owner    AccountType = "owner"
 	Staff    AccountType = "staff"
+	Admin    AccountType = "admin"
 )
 
 func ParseAccountType(s string) (AccountType, bool) {
 	switch AccountType(s) {
 	case "", Investor:
 		return Investor, true
-	case Owner, Staff:
+	case Owner, Staff, Admin:
 		return AccountType(s), true
 	}
 	return "", false

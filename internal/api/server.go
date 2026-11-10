@@ -42,8 +42,7 @@ func (s *Server) Router() *gin.Engine {
 
 		v1.POST("/admin/login", loginRateLimit(), s.adminLogin)
 
-		// Self-service password reset for investors, owners and staff (the
-		// admin's password lives in ADMIN_PASSWORD_HASH and is changed there).
+		// Self-service password reset for investors, owners, staff and the admin.
 		v1.POST("/auth/password/forgot", loginRateLimit(), s.forgotPassword)
 		v1.POST("/auth/password/reset", loginRateLimit(), s.resetPassword)
 
@@ -78,6 +77,7 @@ func (s *Server) Router() *gin.Engine {
 		admin := v1.Group("/admin")
 		admin.Use(s.requireAdmin)
 		{
+			admin.POST("/logout", s.adminLogout)
 			admin.POST("/offerings", s.createOffering)
 			admin.GET("/offerings", s.listAllOfferings)
 			admin.PATCH("/offerings/:offeringId/details", s.updateOfferingDetails)

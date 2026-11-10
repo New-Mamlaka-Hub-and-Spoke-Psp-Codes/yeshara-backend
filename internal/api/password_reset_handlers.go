@@ -14,6 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 
+	"yeshara.network/marketplace/internal/admins"
 	"yeshara.network/marketplace/internal/investors"
 	"yeshara.network/marketplace/internal/owners"
 	"yeshara.network/marketplace/internal/passwordreset"
@@ -36,7 +37,7 @@ func (s *Server) forgotPassword(c *gin.Context) {
 	}
 	accountType, ok := passwordreset.ParseAccountType(req.AccountType)
 	if !ok {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "accountType must be investor, owner or staff"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "accountType must be investor, owner, staff or admin"})
 		return
 	}
 	email := strings.ToLower(strings.TrimSpace(req.Email))
@@ -51,7 +52,7 @@ func (s *Server) sendResetEmail(accountType passwordreset.AccountType, email str
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	id, name, err := lookupAccount(ctx, accountType, email)
+	id, name, err := s.lookupAccount(ctx, accountType, email)
 	if err != nil {
 		return // unknown email: nothing to send
 	}
@@ -76,8 +77,13 @@ func (s *Server) sendResetEmail(accountType passwordreset.AccountType, email str
 	}
 }
 
-func lookupAccount(ctx context.Context, t passwordreset.AccountType, email string) (primitive.ObjectID, string, error) {
+func (s *Server) lookupAccount(ctx context.Context, t passwordreset.AccountType, email string) (primitive.ObjectID, string, error) {
 	switch t {
+	case passwordreset.Admin:
+		if email == "" || email != strings.ToLower(strings.TrimSpace(s.cfg.AdminEmail)) {
+			return primitive.NilObjectID, "", errors.New("not the admin email")
+		}
+		return admins.AccountID, "", nil
 	case passwordreset.Owner:
 		o, err := owners.GetByEmail(ctx, email)
 		if err != nil {
@@ -120,6 +126,8 @@ func (s *Server) resetPassword(c *gin.Context) {
 		return
 	}
 	switch accountType {
+	case passwordreset.Admin:
+		err = admins.SetPassword(ctx, req.Password)
 	case passwordreset.Owner:
 		err = owners.SetPassword(ctx, id, req.Password)
 	case passwordreset.Staff:

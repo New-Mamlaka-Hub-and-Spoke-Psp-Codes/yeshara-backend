@@ -1,16 +1,19 @@
 package api
 
 import (
+	"errors"
+	"log"
 	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
+
+	"yeshara.network/marketplace/internal/admins"
 )
 
-// adminLogin exchanges the configured admin email/password for the shared
-// AdminToken — a friendlier login form in front of the same single-secret
-// gate requireAdmin checks, not real per-user admin accounts.
+// adminLogin exchanges the configured admin email + password for an admin
+// session token (sent back as X-Admin-Token). The password is the stored one
+// after a reset, else ADMIN_PASSWORD_HASH.
 func (s *Server) adminLogin(c *gin.Context) {
 	var req struct {
 		Email    string `json:"email" binding:"required"`
@@ -22,14 +25,25 @@ func (s *Server) adminLogin(c *gin.Context) {
 	}
 
 	email := strings.ToLower(strings.TrimSpace(req.Email))
-	if email != strings.ToLower(s.cfg.AdminEmail) {
+	if email != strings.ToLower(strings.TrimSpace(s.cfg.AdminEmail)) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid email or password"})
 		return
 	}
-	if bcrypt.CompareHashAndPassword([]byte(s.cfg.AdminPasswordHash), []byte(req.Password)) != nil {
+	token, err := admins.Login(c.Request.Context(), req.Password, s.cfg.AdminPasswordHash)
+	if errors.Is(err, admins.ErrInvalidCredentials) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid email or password"})
 		return
 	}
+	if err != nil {
+		log.Printf("admin login: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "couldn't sign in, please try again"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"token": token})
+}
 
-	c.JSON(http.StatusOK, gin.H{"token": s.cfg.AdminToken})
+// adminLogout ends the caller's admin session (a no-op for ADMIN_TOKEN).
+func (s *Server) adminLogout(c *gin.Context) {
+	_ = admins.Logout(c.Request.Context(), c.GetHeader("X-Admin-Token"))
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }

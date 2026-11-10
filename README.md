@@ -15,7 +15,7 @@ go test ./...          # add TEST_MONGO_URI=... to run the Mongo-backed tests
 | `COMET_ENGINE_BASE_URL`, `COMET_API_KEY`, `COMET_API_SECRET` | Yeshara's engine tenant credentials. Required. |
 | `COMET_ENGINE_NETWORK` | `testnet` (default) or `mainnet`; aliases such as `prod` and `sandbox` are accepted. Sent as `X-Network` on every engine call. |
 | `PAYMENTS_BASE_URL`, `PAYMENTS_MERCHANT_ID`, `PAYMENTS_CALLBACK_URL`, `PAYMENTS_CALLBACK_SECRET` | Mamlaka PSP (M-Pesa/Airtel). The callback secret is required. |
-| `ADMIN_TOKEN`, `ADMIN_EMAIL`, `ADMIN_PASSWORD_HASH` | Admin API and login. |
+| `ADMIN_TOKEN`, `ADMIN_EMAIL`, `ADMIN_PASSWORD_HASH` | Admin API and login. `ADMIN_TOKEN` is a static operator credential; sign-in issues 12h sessions. `ADMIN_PASSWORD_HASH` is the initial password: after a reset via `/auth/password/forgot` (`accountType: admin`), the stored hash in `admin_credentials` wins. |
 | `TREASURY_USER_ID` | The custodial identity that holds unsold units (default `yeshara-treasury`). |
 
 **Environments must match.** The server refuses to start with `COMET_ENGINE_NETWORK=mainnet` and the sandbox payments URL, because that would mint real units against fake payments. It also refuses `testnet` with the live payments URL, because investors would pay real money for test units.
